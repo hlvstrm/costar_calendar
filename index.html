@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoSTAR Network — Upcoming Events</title>
+<style>
+  :root{
+    /* ---- swap these for CoSTAR's exact brand values once you have them ---- */
+    --accent: #2563eb;          /* used for "today" highlight + nav hover */
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+    --ink: #14151a;
+    --muted: #6b7280;
+    --line: #e6e7eb;
+    --bg: #ffffff;
+    --bg-soft: #f7f7f8;
+  }
+
+  * { box-sizing: border-box; }
+  html,body{ margin:0; padding:0; background:transparent; }
+  body{
+    font-family: var(--font);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .cal-app{ max-width: 880px; margin: 0 auto; padding: 4px; }
+
+  .cal-card{
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(20,21,26,.04), 0 12px 28px -16px rgba(20,21,26,.14);
+  }
+
+  /* ---------- header ---------- */
+  .cal-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 18px 22px; border-bottom: 1px solid var(--line);
+    gap: 12px; flex-wrap: wrap;
+  }
+  .cal-title{ font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+  .cal-nav{ display:flex; align-items:center; gap: 6px; }
+  .cal-iconbtn{
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid var(--line); background: #fff; cursor: pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition: background .15s, border-color .15s;
+  }
+  .cal-iconbtn:hover{ background: var(--bg-soft); border-color: #d7d9de; }
+  .cal-iconbtn svg{ width:16px; height:16px; stroke: var(--ink); }
+  .cal-todaybtn{
+    padding: 6px 13px; border-radius: 8px; border: 1px solid var(--line);
+    background:#fff; font: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; margin-right: 4px; transition: background .15s;
+  }
+  .cal-todaybtn:hover{ background: var(--bg-soft); }
+
+  /* ---------- legend ---------- */
+  .cal-legend{
+    display:flex; flex-wrap:wrap; gap: 14px;
+    padding: 10px 22px; border-bottom: 1px solid var(--line);
+    background: var(--bg-soft);
+  }
+  .cal-legend-item{ display:flex; align-items:center; gap:6px; font-size: 12px; color: var(--muted); font-weight: 600; }
+  .cal-legend-dot{ width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
+
+  /* ---------- weekday row ---------- */
+  .cal-weekdays{
+    display:grid; grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid var(--line);
+  }
+  .cal-weekdays div{
+    padding: 9px 0; text-align:center; font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+  }
+
+  /* ---------- grid ---------- */
+  .cal-grid{
+    display:grid; grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: minmax(92px, 1fr);
+    transition: opacity .12s ease;
+  }
+  .cal-grid.is-fading{ opacity: 0; }
+
+  .cal-cell{
+    border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    padding: 6px 6px 8px; display:flex; flex-direction:column; gap:3px;
+    min-width: 0;
+  }
+  .cal-cell:nth-child(7n){ border-right: none; }
+  .cal-cell.is-outside{ background: var(--bg-soft); }
+  .cal-cell.is-weekend:not(.is-outside){ background: #fbfbfc; }
+
+  .cal-daynum{
+    width: 23px; height: 23px; border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 12.5px; font-weight: 700; color: var(--ink);
+  }
+  .cal-cell.is-outside .cal-daynum{ color: #c7c9d1; }
+  .cal-cell.is-today .cal-daynum{ background: var(--accent); color: #fff; }
+
+  .cal-events{ display:flex; flex-direction:column; gap: 3px; min-width:0; }
+  .cal-pill{
+    display:flex; align-items:center; gap: 5px;
+    font-size: 11.5px; line-height: 1.35; font-weight: 600;
+    padding: 2px 6px; border-radius: 6px;
+    text-decoration:none; color: inherit; cursor:pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: filter .1s;
+  }
+  .cal-pill:hover{ filter: brightness(0.94); }
+  .cal-dot{ width:6px; height:6px; border-radius:50%; flex: 0 0 auto; }
+  .cal-more{
+    font-size: 11px; color: var(--muted); font-weight: 700;
+    background: none; border: none; padding: 2px 6px; text-align:left;
+    cursor: pointer; font-family: inherit;
+  }
+  .cal-more:hover{ color: var(--ink); }
+
+  .cal-footer{
+    padding: 10px 22px; font-size: 11.5px; color: var(--muted);
+    border-top: 1px solid var(--line);
+  }
+
+  /* ---------- modal ---------- */
+  .cal-modal-backdrop{
+    position: fixed; inset: 0; background: rgba(15,17,21,.45);
+    display:flex; align-items:center; justify-content:center; padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity .15s;
+    z-index: 1000;
+  }
+  .cal-modal-backdrop.is-open{ opacity: 1; pointer-events: auto; }
+  .cal-modal{
+    background: #fff; border-radius: 16px; width: 100%; max-width: 420px;
+    max-height: 78vh; overflow-y: auto; padding: 20px;
+    box-shadow: 0 24px 48px -14px rgba(0,0,0,.3);
+    transform: translateY(6px); transition: transform .15s;
+  }
+  .cal-modal-backdrop.is-open .cal-modal{ transform: translateY(0); }
+  .cal-modal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 12px; }
+  .cal-modal-head h3{ margin:0; font-size: 15px; font-weight: 700; }
+  .cal-modal-close{
+    width: 26px; height: 26px; border-radius: 50%; border: none; background: var(--bg-soft);
+    cursor: pointer; display:flex; align-items:center; justify-content:center; font-size: 14px; color: var(--muted);
+  }
+  .cal-modal-event{
+    display:block; padding: 10px 0; border-top: 1px solid var(--line);
+    text-decoration:none; color: inherit;
+  }
+  .cal-modal-event:first-of-type{ border-top:none; }
+  .cal-modal-tag{
+    display:inline-block; font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; padding: 2px 7px; border-radius: 5px; margin-bottom: 6px;
+  }
+  .cal-modal-title{ font-size: 13.5px; font-weight: 700; line-height:1.35; margin-bottom: 3px; }
+  .cal-modal-lab{ font-size: 12px; color: var(--muted); }
+
+  @media (max-width: 560px){
+    .cal-title{ font-size: 16px; }
+    .cal-legend{ display:none; }
+    .cal-grid{ grid-auto-rows: minmax(64px, 1fr); }
+    .cal-daynum{ width:20px; height:20px; font-size:11px; }
+    .cal-cell{ padding: 4px; }
+    .cal-pill{ font-size: 0; padding: 0; background: none !important; justify-content:center; }
+    .cal-pill .cal-dot{ margin: 2px auto 0; }
+    .cal-more{ font-size: 9.5px; padding: 0; text-align:center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cal-app">
+  <div class="cal-card">
+
+    <div class="cal-header">
+      <div class="cal-title" id="calTitle">Month Year</div>
+      <div class="cal-nav">
+        <button class="cal-todaybtn" id="calToday">Today</button>
+        <button class="cal-iconbtn" id="calPrev" aria-label="Previous month">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="cal-iconbtn" id="calNext" aria-label="Next month">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="cal-legend" id="calLegend"></div>
+
+    <div class="cal-weekdays">
+      <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+    </div>
+
+    <div class="cal-grid" id="calGrid"></div>
+
+    <div class="cal-footer">Click an event to open the full details on costarnetwork.co.uk</div>
+  </div>
+</div>
+
+<div class="cal-modal-backdrop" id="calModalBackdrop">
+  <div class="cal-modal" role="dialog" aria-modal="true" aria-labelledby="calModalDate">
+    <div class="cal-modal-head">
+      <h3 id="calModalDate">Date</h3>
+      <button class="cal-modal-close" id="calModalClose" aria-label="Close">✕</button>
+    </div>
+    <div id="calModalBody"></div>
+  </div>
+</div>
+
+<script src="events.js"></script>
+<script>
+(function(){
+
+  /* ----------------------------------------------------------------------
+     Category colours — pill background / text / legend dot.
+     Add a new "type" here if you add one in events.js.
+  ---------------------------------------------------------------------- */
+  const CATEGORY_COLOURS = {
+    "Webinar":            { text: "#1d4ed8", bg: "#e8effe" },
+    "Workshop":           { text: "#c2410c", bg: "#fdece1" },
+    "Event":              { text: "#6d28d9", bg: "#f1e9fd" },
+    "Funding & Support":  { text: "#047857", bg: "#e2f5ef" },
+    "News":               { text: "#4b5563", bg: "#eef0f2" },
+    "Default":            { text: "#334155", bg: "#eef1f4" }
+  };
+  function colourFor(type){ return CATEGORY_COLOURS[type] || CATEGORY_COLOURS.Default; }
+
+  /* ---------------------------------------------------------------------- */
+
+  function pad(n){ return String(n).padStart(2,"0"); }
+  function dkey(y,m,d){ return `${y}-${pad(m+1)}-${pad(d)}`; }
+  function parseISO(str){
+    const [y,m,d] = str.split("-").map(Number);
+    return { y, m: m-1, d };
+  }
+
+  // Build a map of "YYYY-MM-DD" -> [events], expanding startDate/endDate ranges.
+  function buildEventMap(events){
+    const map = new Map();
+    (events || []).forEach(ev => {
+      if (ev.date){
+        add(ev.date, ev);
+      } else if (ev.startDate && ev.endDate){
+        const start = parseISO(ev.startDate), end = parseISO(ev.endDate);
+        let cursor = new Date(start.y, start.m, start.d);
+        const last = new Date(end.y, end.m, end.d);
+        let guard = 0;
+        while (cursor <= last && guard < 90){
+          add(dkey(cursor.getFullYear(), cursor.getMonth(), cursor.getDate()), ev);
+          cursor.setDate(cursor.getDate()+1);
+          guard++;
+        }
+      }
+    });
+    function add(key, ev){
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(ev);
+    }
+    return map;
+  }
+
+  const eventMap = buildEventMap(typeof CALENDAR_EVENTS !== "undefined" ? CALENDAR_EVENTS : []);
+
+  // Build legend from whichever categories actually appear in the data.
+  function renderLegend(){
+    const used = new Set();
+    (typeof CALENDAR_EVENTS !== "undefined" ? CALENDAR_EVENTS : []).forEach(e => used.add(e.type || "Default"));
+    const legend = document.getElementById("calLegend");
+    legend.innerHTML = "";
+    used.forEach(type => {
+      const c = colourFor(type);
+      const item = document.createElement("div");
+      item.className = "cal-legend-item";
+      item.innerHTML = `<span class="cal-legend-dot" style="background:${c.text}"></span>${type}`;
+      legend.appendChild(item);
+    });
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  const today = new Date();
+  let viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  const gridEl = document.getElementById("calGrid");
+  const titleEl = document.getElementById("calTitle");
+
+  function maxVisible(){
+    return window.innerWidth < 560 ? 4 : 3;
+  }
+
+  function render(){
+    const y = viewDate.getFullYear(), m = viewDate.getMonth();
+    titleEl.textContent = viewDate.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+
+    const firstOfMonth = new Date(y, m, 1);
+    const firstWeekday = (firstOfMonth.getDay() + 6) % 7; // Mon=0 ... Sun=6
+
+    let html = "";
+    for (let i = 0; i < 42; i++){
+      const cellDate = new Date(y, m, i - firstWeekday + 1);
+      const cy = cellDate.getFullYear(), cm = cellDate.getMonth(), cd = cellDate.getDate();
+      const key = dkey(cy, cm, cd);
+      const dayEvents = eventMap.get(key) || [];
+      const isOutside = cm !== m;
+      const isToday = cy === today.getFullYear() && cm === today.getMonth() && cd === today.getDate();
+      const dow = cellDate.getDay();
+      const isWeekend = dow === 0 || dow === 6;
+
+      const classes = ["cal-cell"];
+      if (isOutside) classes.push("is-outside");
+      if (isToday) classes.push("is-today");
+      if (isWeekend) classes.push("is-weekend");
+
+      const cap = maxVisible();
+      let pillsHtml = "";
+      const visible = dayEvents.length > cap ? dayEvents.slice(0, cap - 1) : dayEvents;
+      visible.forEach(ev => {
+        const c = colourFor(ev.type);
+        pillsHtml += `<a class="cal-pill" href="${escapeAttr(ev.url || '#')}" target="_top" rel="noopener"
+          style="background:${c.bg};color:${c.text}" title="${escapeAttr(ev.title)}">
+          <span class="cal-dot" style="background:${c.text}"></span>${escapeHtml(ev.title)}
+        </a>`;
+      });
+      if (dayEvents.length > cap){
+        const remaining = dayEvents.length - visible.length;
+        pillsHtml += `<button class="cal-more" data-daykey="${key}">+${remaining} more</button>`;
+      } else if (dayEvents.length > 0 && window.innerWidth < 560){
+        // On very small screens tapping the dot(s) opens the day list too.
+      }
+
+      html += `<div class="${classes.join(' ')}" data-daykey="${key}">
+        <div class="cal-daynum">${cd}</div>
+        <div class="cal-events">${pillsHtml}</div>
+      </div>`;
+    }
+
+    gridEl.innerHTML = html;
+
+    // small fade-in
+    gridEl.classList.add("is-fading");
+    requestAnimationFrame(() => gridEl.classList.remove("is-fading"));
+
+    // "+N more" buttons open the modal
+    gridEl.querySelectorAll(".cal-more").forEach(btn => {
+      btn.addEventListener("click", () => openDayModal(btn.dataset.daykey));
+    });
+
+    // On mobile, tapping a cell with events (but not directly on a link) opens the modal
+    gridEl.querySelectorAll(".cal-cell").forEach(cell => {
+      cell.addEventListener("click", (e) => {
+        if (window.innerWidth >= 560) return;
+        if (e.target.closest("a")) return;
+        const key = cell.dataset.daykey;
+        if ((eventMap.get(key) || []).length > 0) openDayModal(key);
+      });
+    });
+
+    notifyHeight();
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
+  }
+  function escapeAttr(str){ return escapeHtml(str); }
+
+  /* ---------------------------------------------------------------------- */
+  /* Day modal                                                              */
+
+  const modalBackdrop = document.getElementById("calModalBackdrop");
+  const modalDate = document.getElementById("calModalDate");
+  const modalBody = document.getElementById("calModalBody");
+  let lastFocused = null;
+
+  function openDayModal(key){
+    const events = eventMap.get(key) || [];
+    if (!events.length) return;
+    const { y, m, d } = parseISO(key);
+    modalDate.textContent = new Date(y, m, d).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+
+    modalBody.innerHTML = events.map(ev => {
+      const c = colourFor(ev.type);
+      return `<a class="cal-modal-event" href="${escapeAttr(ev.url || '#')}" target="_top" rel="noopener">
+        <span class="cal-modal-tag" style="background:${c.bg};color:${c.text}">${escapeHtml(ev.type || '')}</span>
+        <div class="cal-modal-title">${escapeHtml(ev.title)}</div>
+        ${ev.lab ? `<div class="cal-modal-lab">${escapeHtml(ev.lab)}</div>` : ""}
+      </a>`;
+    }).join("");
+
+    lastFocused = document.activeElement;
+    modalBackdrop.classList.add("is-open");
+    modalBackdrop.querySelector(".cal-modal-close").focus();
+    notifyHeight();
+  }
+  function closeDayModal(){
+    modalBackdrop.classList.remove("is-open");
+    if (lastFocused) lastFocused.focus();
+  }
+  document.getElementById("calModalClose").addEventListener("click", closeDayModal);
+  modalBackdrop.addEventListener("click", (e) => { if (e.target === modalBackdrop) closeDayModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDayModal(); });
+
+  /* ---------------------------------------------------------------------- */
+  /* Nav                                                                    */
+
+  document.getElementById("calPrev").addEventListener("click", () => {
+    viewDate.setMonth(viewDate.getMonth() - 1); render();
+  });
+  document.getElementById("calNext").addEventListener("click", () => {
+    viewDate.setMonth(viewDate.getMonth() + 1); render();
+  });
+  document.getElementById("calToday").addEventListener("click", () => {
+    viewDate = new Date(today.getFullYear(), today.getMonth(), 1); render();
+  });
+
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(render, 150);
+  });
+
+  // Optional: tell a parent page how tall we are, in case your embed
+  // component knows how to listen for this (safe no-op otherwise).
+  function notifyHeight(){
+    try{
+      if (window.parent && window.parent !== window){
+        const h = document.querySelector(".cal-app").offsetHeight;
+        window.parent.postMessage({ type: "costar-calendar-resize", height: h }, "*");
+      }
+    }catch(e){ /* ignore */ }
+  }
+
+  renderLegend();
+  render();
+})();
+</script>
+</body>
+</html>
