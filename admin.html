@@ -23,7 +23,8 @@
     box-shadow: 0 1px 2px rgba(20,21,26,.04), 0 10px 24px -16px rgba(20,21,26,.12);
     margin-bottom: 20px;
   }
-  .card h2{ font-size: 14px; margin: 0 0 14px; text-transform:uppercase; letter-spacing:.04em; color: var(--muted); }
+  .card h2{ font-size: 14px; margin: 0 0 4px; text-transform:uppercase; letter-spacing:.04em; color: var(--muted); }
+  .card .card-sub{ font-size:12.5px; color:var(--muted); margin: 0 0 14px; }
 
   label{ display:block; font-size: 13px; font-weight: 700; margin: 14px 0 6px; }
   label:first-of-type{ margin-top:0; }
@@ -46,8 +47,7 @@
     padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:#fff; cursor:pointer; color:var(--muted);
   }
   .tag-check:checked + .tag-check-label{ border-color:transparent; }
-  .newtag-row{ display:flex; gap:8px; margin-top:10px; }
-  .newtag-row input{ flex:1; }
+  .tagpicker-empty{ font-size:13px; color:var(--muted); }
 
   button{ font: inherit; cursor:pointer; }
   .btn{
@@ -60,8 +60,9 @@
   .btn-primary:disabled{ opacity:.5; cursor:default; }
   .btn-text{ background:none; border:none; color:var(--muted); text-decoration:underline; font-size:13px; padding: 6px 4px; }
   .btn-danger{ color: var(--danger); }
+  .btn-sm{ font-size:12px; padding:6px 11px; }
 
-  .status{ margin-top:14px; font-size:13px; padding:10px 12px; border-radius:8px; display:none; }
+  .status{ margin-top:14px; font-size:13px; padding:10px 12px; border-radius:8px; display:none; line-height:1.5; }
   .status.show{ display:block; }
   .status.ok{ background:#e2f5ef; color:#047857; }
   .status.err{ background:#fde8e8; color:#b91c1c; }
@@ -69,17 +70,25 @@
 
   .form-actions{ display:flex; align-items:center; gap:12px; margin-top:18px; }
 
-  /* list */
-  .ev-row{ display:flex; gap:12px; align-items:flex-start; padding:14px 0; border-top:1px solid var(--line); }
-  .ev-row:first-child{ border-top:none; }
+  /* generic list rows (events + tags) */
+  .list-row{ display:flex; gap:12px; align-items:flex-start; padding:14px 0; border-top:1px solid var(--line); }
+  .list-row:first-child{ border-top:none; }
   .ev-date{ width:92px; flex:0 0 auto; font-size:12px; font-weight:700; color:var(--muted); padding-top:2px; }
   .ev-main{ flex:1; min-width:0; }
   .ev-title{ font-size:14px; font-weight:700; margin-bottom:5px; }
   .ev-tags{ display:flex; flex-wrap:wrap; gap:5px; margin-bottom:5px; }
   .ev-tag{ font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:5px; text-transform:uppercase; letter-spacing:.03em; }
   .ev-lab{ font-size:12px; color:var(--muted); }
-  .ev-actions{ display:flex; gap:8px; flex:0 0 auto; }
-  .ev-actions button{ font-size:12px; padding:6px 11px; }
+  .row-actions{ display:flex; gap:8px; flex:0 0 auto; }
+  .row-actions button{ font-size:12px; padding:6px 11px; }
+
+  /* tag manager rows */
+  .tag-row-main{ flex:1; display:flex; align-items:center; gap:10px; min-width:0; }
+  .tag-row-dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
+  .tag-row-name{ font-size:14px; font-weight:700; }
+  .tag-row-count{ font-size:12px; color:var(--muted); }
+  .newtag-row{ display:flex; gap:8px; margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
+  .newtag-row input{ flex:1; }
 
   .empty{ color:var(--muted); font-size:13.5px; padding: 10px 0; }
   .warn-banner{
@@ -96,7 +105,7 @@
 <div class="wrap">
 
   <h1>CoSTAR Events — Staff Admin</h1>
-  <p class="sub">Adds, edits and removes events directly in the live calendar's <code>events.json</code> file on GitHub.</p>
+  <p class="sub">Adds, edits and removes events and tags directly in the live calendar's data files on GitHub.</p>
 
   <div id="warnBanner" class="warn-banner" style="display:none;">
     ⚠️ This page hasn't been configured yet. Open <code>admin.html</code> in a text editor and fill in
@@ -113,7 +122,7 @@
     <ol>
       <li>On GitHub, go to <strong>Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong> → <strong>Generate new token</strong>.</li>
       <li>Under "Repository access", choose <strong>Only select repositories</strong> and pick this calendar's repo.</li>
-      <li>Under "Permissions", set <strong>Contents</strong> to <strong>Read and write</strong>. Leave everything else as-is.</li>
+      <li>Under "Permissions", set <strong>Contents</strong> to <strong>Read and write</strong> — this is the step people most often miss, and it's why "viewing" things works but saving doesn't. Leave everything else as-is.</li>
       <li>Set an expiry (e.g. 90 days) and click <strong>Generate token</strong>. Copy it — you'll only see it once.</li>
     </ol>
     <label for="tokenInput">Paste your token</label>
@@ -130,6 +139,17 @@
 
     <div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
       <button class="btn-text" id="signOutBtn">Sign out</button>
+    </div>
+
+    <div class="card">
+      <h2>Manage tags</h2>
+      <p class="card-sub">Rename or delete a tag everywhere it's used, or add a new one for staff to pick from below.</p>
+      <div id="tagManagerList"><p class="empty">Loading…</p></div>
+      <div class="newtag-row">
+        <input type="text" id="newTagNameInput" placeholder="New tag name…">
+        <button type="button" class="btn" id="addTagBtn">Add tag</button>
+      </div>
+      <div id="tagStatus" class="status"></div>
     </div>
 
     <div class="card">
@@ -155,10 +175,7 @@
 
         <label>Tags</label>
         <div class="tagpicker" id="tagPicker"></div>
-        <div class="newtag-row">
-          <input type="text" id="newTagInput" placeholder="Add a new tag…">
-          <button type="button" class="btn" id="addTagBtn">Add tag</button>
-        </div>
+        <p class="hint">Don't see the tag you need? Add it in "Manage tags" above, then come back here.</p>
 
         <label for="fLab">Lab (optional)</label>
         <input type="text" id="fLab" list="labList" placeholder="e.g. National Lab">
@@ -196,14 +213,15 @@
   /* ======================================================================
      CONFIGURE THESE TWO LINES before handing this page to staff.
   ====================================================================== */
-  const REPO_OWNER = "hlvstrm";
-  const REPO_NAME  = "costar_calendar";
+  const REPO_OWNER = "YOUR-GITHUB-USERNAME";
+  const REPO_NAME  = "costar-events-calendar";
   const BRANCH     = "main";
-  const FILE_PATH  = "events.json";
   /* ====================================================================== */
 
+  const FILE_PATH_EVENTS = "events.json";
+  const FILE_PATH_TAGS   = "tags.json";
+  const DEFAULT_TAGS     = ["Networking", "Hackathon", "Open Day", "Webinar", "Workshop", "Talk"];
   const API_BASE = "https://api.github.com";
-  const STARTER_TAGS = ["Networking", "Hackathon", "Open Day", "Webinar", "Workshop", "Talk", "Funding & Support"];
 
   const PALETTE = [
     { bg: "#e8effe", text: "#1d4ed8" }, { bg: "#fdece1", text: "#c2410c" },
@@ -214,7 +232,7 @@
   function hashStr(s){ let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return Math.abs(h); }
   function tagColor(tag){ return tag ? PALETTE[hashStr(tag) % PALETTE.length] : PALETTE[7]; }
 
-  if (REPO_OWNER === "hlvstrm"){
+  if (REPO_OWNER === "YOUR-GITHUB-USERNAME"){
     document.getElementById("warnBanner").style.display = "block";
   }
 
@@ -239,29 +257,68 @@
     return { "Authorization": `token ${token}`, "Accept": "application/vnd.github+json" };
   }
 
-  async function fetchEventsFile(token){
-    const res = await fetch(`${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`, { headers: authHeaders(token) });
-    if (!res.ok){
-      if (res.status === 404) throw new Error(`Couldn't find ${FILE_PATH} in ${REPO_OWNER}/${REPO_NAME} — check REPO_OWNER/REPO_NAME at the top of admin.html.`);
-      if (res.status === 401 || res.status === 403) throw new Error("Token was rejected — check it's valid and has Contents: Read and write on this repo.");
-      throw new Error(`GitHub API error ${res.status}`);
+  /* ---------------------------------------------------------------------- */
+  /* Generic GitHub file read/write, with error messages that actually say  */
+  /* what went wrong instead of just the HTTP status.                      */
+  /* ---------------------------------------------------------------------- */
+
+  function describeApiError(status){
+    if (status === 401 || status === 403){
+      return 'GitHub rejected this (403) — your token most likely doesn\'t have "Contents: Read and write" ' +
+             'permission on this repo (only Read), or the repo has branch protection blocking direct commits ' +
+             'to main. Check the token\'s permissions under GitHub → Settings → Developer settings → ' +
+             'Personal access tokens.';
     }
-    const data = await res.json();
-    return { events: JSON.parse(base64ToUtf8(data.content)), sha: data.sha };
+    if (status === 404) return "Couldn't find that file — check REPO_OWNER/REPO_NAME at the top of admin.html.";
+    if (status === 409) return "Someone else may have just saved a change — please try again.";
+    return `GitHub API error ${status}`;
   }
 
-  async function saveEventsFile(token, events, sha, message){
-    const content = utf8ToBase64(JSON.stringify(events, null, 2));
-    const res = await fetch(`${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+  async function githubGetFile(path, token){
+    const res = await fetch(`${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${BRANCH}`, { headers: authHeaders(token) });
+    if (!res.ok){
+      const err = new Error(describeApiError(res.status));
+      err.status = res.status;
+      throw err;
+    }
+    const data = await res.json();
+    return { data: JSON.parse(base64ToUtf8(data.content)), sha: data.sha };
+  }
+
+  async function githubPutFile(path, token, dataObj, sha, message){
+    const body = { message, content: utf8ToBase64(JSON.stringify(dataObj, null, 2)), branch: BRANCH };
+    if (sha) body.sha = sha;
+    const res = await fetch(`${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, {
       method: "PUT",
       headers: { ...authHeaders(token), "Content-Type": "application/json" },
-      body: JSON.stringify({ message, content, sha, branch: BRANCH })
+      body: JSON.stringify(body)
     });
     if (!res.ok){
-      if (res.status === 409) throw new Error("Someone else may have just saved a change — please try again.");
-      throw new Error(`GitHub API error ${res.status}`);
+      const err = new Error(describeApiError(res.status));
+      err.status = res.status;
+      throw err;
     }
     return res.json();
+  }
+
+  async function fetchEventsFile(token){
+    const { data, sha } = await githubGetFile(FILE_PATH_EVENTS, token);
+    return { events: data, sha };
+  }
+  async function saveEventsFile(token, events, sha, message){
+    return githubPutFile(FILE_PATH_EVENTS, token, events, sha, message);
+  }
+  async function fetchTagsFile(token){
+    try{
+      const { data, sha } = await githubGetFile(FILE_PATH_TAGS, token);
+      return { tags: data, sha };
+    }catch(err){
+      if (err.status === 404) return { tags: DEFAULT_TAGS.slice(), sha: null }; // will be created on first save
+      throw err;
+    }
+  }
+  async function saveTagsFile(token, tags, sha, message){
+    return githubPutFile(FILE_PATH_TAGS, token, tags, sha, message);
   }
 
   function cleanEvent(ev){
@@ -285,9 +342,7 @@
   function setToken(t){ sessionStorage.setItem("costar_admin_pat", t); }
   function clearToken(){ sessionStorage.removeItem("costar_admin_pat"); }
 
-  function showStatus(el, msg, kind){
-    el.textContent = msg; el.className = "status show " + (kind || "info");
-  }
+  function showStatus(el, msg, kind){ el.textContent = msg; el.className = "status show " + (kind || "info"); }
   function hideStatus(el){ el.className = "status"; }
 
   connectBtn.addEventListener("click", async () => {
@@ -300,7 +355,7 @@
       setToken(t);
       gate.style.display = "none";
       dashboard.style.display = "block";
-      loadAndRenderList();
+      refreshAll();
     }catch(err){
       showStatus(connectStatus, "Couldn't connect: " + err.message, "err");
     }finally{
@@ -311,17 +366,160 @@
   document.getElementById("signOutBtn").addEventListener("click", () => { clearToken(); location.reload(); });
 
   /* ---------------------------------------------------------------------- */
-  /* Form                                                                   */
+  /* Shared state — refreshed together so the tag list, the event form's    */
+  /* tag picker, and the event list never fall out of sync with each other. */
+  /* ---------------------------------------------------------------------- */
+
+  let LAST_EVENTS = [];
+  let LAST_TAG_NAMES = [];
+
+  async function refreshAll(){
+    const token = getToken();
+    const eventListEl = document.getElementById("eventList");
+    const tagListEl = document.getElementById("tagManagerList");
+    try{
+      const [{ events }, { tags }] = await Promise.all([fetchEventsFile(token), fetchTagsFile(token)]);
+      LAST_EVENTS = events;
+
+      // A tag can exist in the catalog with no events yet, or on an event
+      // without having been formally added to the catalog (e.g. edited by
+      // hand) — show the union so nothing is hidden from management.
+      const usageCounts = {};
+      events.forEach(ev => (ev.tags || []).forEach(t => { usageCounts[t] = (usageCounts[t] || 0) + 1; }));
+      const allNames = Array.from(new Set([...tags, ...Object.keys(usageCounts)])).sort();
+      LAST_TAG_NAMES = allNames;
+
+      renderTagManager(allNames, usageCounts);
+      renderEventList(events);
+
+      // Keep whichever boxes are currently ticked in the form when we redraw it.
+      const currentlyChecked = Array.from(document.querySelectorAll('#tagPicker input:checked')).map(i => i.value);
+      renderTagPicker(currentlyChecked);
+    }catch(err){
+      tagListEl.innerHTML = `<p class="empty">Couldn't load tags: ${escapeHtml(err.message)}</p>`;
+      eventListEl.innerHTML = `<p class="empty">Couldn't load events: ${escapeHtml(err.message)}</p>`;
+    }
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Manage tags                                                            */
+
+  const tagManagerList = document.getElementById("tagManagerList");
+  const tagStatus = document.getElementById("tagStatus");
+  const newTagNameInput = document.getElementById("newTagNameInput");
+
+  function renderTagManager(names, usageCounts){
+    if (!names.length){
+      tagManagerList.innerHTML = `<p class="empty">No tags yet — add one below.</p>`;
+      return;
+    }
+    tagManagerList.innerHTML = names.map(name => {
+      const c = tagColor(name);
+      const count = usageCounts[name] || 0;
+      return `<div class="list-row">
+        <div class="tag-row-main">
+          <span class="tag-row-dot" style="background:${c.text}"></span>
+          <span class="tag-row-name">${escapeHtml(name)}</span>
+          <span class="tag-row-count">${count} event${count === 1 ? "" : "s"}</span>
+        </div>
+        <div class="row-actions">
+          <button type="button" class="btn btn-sm" data-rename="${escapeHtml(name)}">Rename</button>
+          <button type="button" class="btn btn-sm btn-danger" data-delete-tag="${escapeHtml(name)}">Delete</button>
+        </div>
+      </div>`;
+    }).join("");
+
+    tagManagerList.querySelectorAll("[data-rename]").forEach(btn => {
+      btn.addEventListener("click", () => handleRenameTag(btn.dataset.rename));
+    });
+    tagManagerList.querySelectorAll("[data-delete-tag]").forEach(btn => {
+      btn.addEventListener("click", () => handleDeleteTag(btn.dataset.deleteTag, usageCounts[btn.dataset.deleteTag] || 0));
+    });
+  }
+
+  document.getElementById("addTagBtn").addEventListener("click", async () => {
+    const val = newTagNameInput.value.trim();
+    if (!val) return;
+    hideStatus(tagStatus);
+    if (LAST_TAG_NAMES.some(t => t.toLowerCase() === val.toLowerCase())){
+      return showStatus(tagStatus, "That tag already exists.", "err");
+    }
+    showStatus(tagStatus, "Adding tag…", "info");
+    try{
+      const token = getToken();
+      const { tags, sha } = await fetchTagsFile(token);
+      await saveTagsFile(token, [...tags, val], sha, `Add tag: ${val}`);
+      newTagNameInput.value = "";
+      showStatus(tagStatus, `"${val}" added ✓`, "ok");
+      refreshAll();
+    }catch(err){
+      showStatus(tagStatus, "Could not add tag: " + err.message, "err");
+    }
+  });
+
+  async function handleRenameTag(oldName){
+    const input = prompt(`Rename "${oldName}" to:`, oldName);
+    if (input === null) return;
+    const newName = input.trim();
+    if (!newName || newName === oldName) return;
+    hideStatus(tagStatus);
+    showStatus(tagStatus, `Renaming "${oldName}" to "${newName}"…`, "info");
+    try{
+      const token = getToken();
+      // Events first — that's what the public calendar actually reads.
+      const { events, sha: eventsSha } = await fetchEventsFile(token);
+      const updatedEvents = events.map(ev => {
+        if (!ev.tags || !ev.tags.includes(oldName)) return ev;
+        return { ...ev, tags: Array.from(new Set(ev.tags.map(t => t === oldName ? newName : t))) };
+      });
+      await saveEventsFile(token, updatedEvents, eventsSha, `Rename tag: ${oldName} → ${newName}`);
+
+      // Then the catalog, so it offers the new name going forward.
+      const { tags, sha: tagsSha } = await fetchTagsFile(token);
+      const updatedTags = Array.from(new Set(tags.map(t => t === oldName ? newName : t).filter(Boolean)));
+      await saveTagsFile(token, updatedTags, tagsSha, `Rename tag in catalog: ${oldName} → ${newName}`);
+
+      showStatus(tagStatus, `Renamed to "${newName}" ✓`, "ok");
+      refreshAll();
+    }catch(err){
+      showStatus(tagStatus, "Could not rename tag: " + err.message, "err");
+    }
+  }
+
+  async function handleDeleteTag(name, count){
+    const warning = count ? ` It will be removed from ${count} event${count === 1 ? "" : "s"} — those events keep their other tags.` : "";
+    if (!confirm(`Delete tag "${name}"?${warning}`)) return;
+    hideStatus(tagStatus);
+    showStatus(tagStatus, `Deleting "${name}"…`, "info");
+    try{
+      const token = getToken();
+      const { events, sha: eventsSha } = await fetchEventsFile(token);
+      const updatedEvents = events.map(ev => (ev.tags && ev.tags.includes(name))
+        ? { ...ev, tags: ev.tags.filter(t => t !== name) }
+        : ev);
+      await saveEventsFile(token, updatedEvents, eventsSha, `Remove tag from events: ${name}`);
+
+      const { tags, sha: tagsSha } = await fetchTagsFile(token);
+      if (tags.includes(name)){
+        await saveTagsFile(token, tags.filter(t => t !== name), tagsSha, `Delete tag: ${name}`);
+      }
+      showStatus(tagStatus, `"${name}" deleted ✓`, "ok");
+      refreshAll();
+    }catch(err){
+      showStatus(tagStatus, "Could not delete tag: " + err.message, "err");
+    }
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Event form                                                             */
 
   const form = document.getElementById("eventForm");
   const tagPicker = document.getElementById("tagPicker");
-  const newTagInput = document.getElementById("newTagInput");
   const saveBtn = document.getElementById("saveBtn");
   const formHeading = document.getElementById("formHeading");
   const formStatus = document.getElementById("formStatus");
   const cancelEditBtn = document.getElementById("cancelEditBtn");
   let editingId = null;
-  let knownTags = new Set(STARTER_TAGS);
 
   document.querySelectorAll('input[name="dateMode"]').forEach(radio => {
     radio.addEventListener("change", () => {
@@ -333,13 +531,17 @@
 
   function renderTagPicker(checkedTags){
     checkedTags = checkedTags || [];
-    tagPicker.innerHTML = Array.from(knownTags).sort().map(tag => {
+    if (!LAST_TAG_NAMES.length){
+      tagPicker.innerHTML = `<span class="tagpicker-empty">No tags yet — add one in "Manage tags" above.</span>`;
+      return;
+    }
+    tagPicker.innerHTML = LAST_TAG_NAMES.map(tag => {
       const c = tagColor(tag);
       const id = "tag_" + tag.replace(/[^a-z0-9]/gi, "_");
       const checked = checkedTags.includes(tag) ? "checked" : "";
       const activeStyle = checkedTags.includes(tag) ? `style="background:${c.bg};color:${c.text}"` : "";
       return `<input type="checkbox" class="tag-check" name="tags" id="${id}" value="${escapeHtml(tag)}" ${checked}>
-        <label class="tag-check-label" for="${id}" ${activeStyle} data-tagname="${escapeHtml(tag)}">${escapeHtml(tag)}</label>`;
+        <label class="tag-check-label" for="${id}" ${activeStyle}>${escapeHtml(tag)}</label>`;
     }).join("");
 
     tagPicker.querySelectorAll(".tag-check").forEach(cb => {
@@ -350,16 +552,6 @@
       });
     });
   }
-  renderTagPicker();
-
-  document.getElementById("addTagBtn").addEventListener("click", () => {
-    const val = newTagInput.value.trim();
-    if (!val) return;
-    knownTags.add(val);
-    const currentlyChecked = Array.from(tagPicker.querySelectorAll('input:checked')).map(i => i.value);
-    renderTagPicker([...currentlyChecked, val]);
-    newTagInput.value = "";
-  });
 
   function resetForm(){
     editingId = null;
@@ -391,7 +583,6 @@
       document.getElementById("rangeDateWrap").style.display = "none";
       document.getElementById("fDate").value = ev.date || "";
     }
-    (ev.tags || []).forEach(t => knownTags.add(t));
     renderTagPicker(ev.tags || []);
     formHeading.textContent = "Edit event";
     saveBtn.textContent = "Save changes";
@@ -439,7 +630,7 @@
       await saveEventsFile(token, updated, sha, editingId ? `Update event: ${title}` : `Add event: ${title}`);
       showStatus(formStatus, (editingId ? "Event updated" : "Event added") + " ✓ (live in ~a minute once GitHub Pages redeploys)", "ok");
       resetForm();
-      loadAndRenderList();
+      refreshAll();
     }catch(err){
       showStatus(formStatus, "Something went wrong: " + err.message, "err");
     }finally{
@@ -448,68 +639,58 @@
   });
 
   /* ---------------------------------------------------------------------- */
-  /* List                                                                   */
-
-  const eventListEl = document.getElementById("eventList");
+  /* Event list                                                             */
 
   function sortKey(ev){ return ev.date || ev.startDate || "9999"; }
 
-  async function loadAndRenderList(){
-    eventListEl.innerHTML = `<p class="empty">Loading…</p>`;
-    try{
-      const token = getToken();
-      const { events } = await fetchEventsFile(token);
-      events.forEach(e => (e.tags || []).forEach(t => knownTags.add(t)));
-
-      if (!events.length){
-        eventListEl.innerHTML = `<p class="empty">No events yet — add one above.</p>`;
-        return;
-      }
-      const sorted = [...events].sort((a,b) => sortKey(a).localeCompare(sortKey(b)));
-      eventListEl.innerHTML = sorted.map(ev => {
-        const dateLabel = ev.date ? ev.date : `${ev.startDate} → ${ev.endDate}`;
-        const tagsHtml = (ev.tags||[]).map(t => {
-          const c = tagColor(t);
-          return `<span class="ev-tag" style="background:${c.bg};color:${c.text}">${escapeHtml(t)}</span>`;
-        }).join("");
-        return `<div class="ev-row">
-          <div class="ev-date">${escapeHtml(dateLabel)}</div>
-          <div class="ev-main">
-            <div class="ev-title">${escapeHtml(ev.title)}</div>
-            <div class="ev-tags">${tagsHtml}</div>
-            ${ev.lab ? `<div class="ev-lab">${escapeHtml(ev.lab)}</div>` : ""}
-          </div>
-          <div class="ev-actions">
-            <button type="button" class="btn" data-edit="${ev.id}">Edit</button>
-            <button type="button" class="btn btn-danger" data-delete="${ev.id}">Delete</button>
-          </div>
-        </div>`;
-      }).join("");
-
-      eventListEl.querySelectorAll("[data-edit]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const ev = events.find(e => e.id === btn.dataset.edit);
-          if (ev) loadEventIntoForm(ev);
-        });
-      });
-      eventListEl.querySelectorAll("[data-delete]").forEach(btn => {
-        btn.addEventListener("click", () => handleDelete(btn.dataset.delete));
-      });
-    }catch(err){
-      eventListEl.innerHTML = `<p class="empty">Couldn't load events: ${escapeHtml(err.message)}</p>`;
+  function renderEventList(events){
+    const eventListEl = document.getElementById("eventList");
+    if (!events.length){
+      eventListEl.innerHTML = `<p class="empty">No events yet — add one above.</p>`;
+      return;
     }
+    const sorted = [...events].sort((a,b) => sortKey(a).localeCompare(sortKey(b)));
+    eventListEl.innerHTML = sorted.map(ev => {
+      const dateLabel = ev.date ? ev.date : `${ev.startDate} → ${ev.endDate}`;
+      const tagsHtml = (ev.tags||[]).map(t => {
+        const c = tagColor(t);
+        return `<span class="ev-tag" style="background:${c.bg};color:${c.text}">${escapeHtml(t)}</span>`;
+      }).join("");
+      return `<div class="list-row">
+        <div class="ev-date">${escapeHtml(dateLabel)}</div>
+        <div class="ev-main">
+          <div class="ev-title">${escapeHtml(ev.title)}</div>
+          <div class="ev-tags">${tagsHtml}</div>
+          ${ev.lab ? `<div class="ev-lab">${escapeHtml(ev.lab)}</div>` : ""}
+        </div>
+        <div class="row-actions">
+          <button type="button" class="btn" data-edit="${ev.id}">Edit</button>
+          <button type="button" class="btn btn-danger" data-delete="${ev.id}">Delete</button>
+        </div>
+      </div>`;
+    }).join("");
+
+    eventListEl.querySelectorAll("[data-edit]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const ev = LAST_EVENTS.find(e => e.id === btn.dataset.edit);
+        if (ev) loadEventIntoForm(ev);
+      });
+    });
+    eventListEl.querySelectorAll("[data-delete]").forEach(btn => {
+      btn.addEventListener("click", () => handleDeleteEvent(btn.dataset.delete));
+    });
   }
 
-  async function handleDelete(id){
+  async function handleDeleteEvent(id){
     const token = getToken();
+    const target = LAST_EVENTS.find(e => e.id === id);
+    if (!target) return;
+    if (!confirm(`Delete "${target.title}"? This can't be undone.`)) return;
     try{
       const { events, sha } = await fetchEventsFile(token);
-      const target = events.find(e => e.id === id);
-      if (!target) return;
-      if (!confirm(`Delete "${target.title}"? This can't be undone.`)) return;
       const updated = events.filter(e => e.id !== id).map(cleanEvent);
       await saveEventsFile(token, updated, sha, `Delete event: ${target.title}`);
-      loadAndRenderList();
+      refreshAll();
     }catch(err){
       alert("Could not delete: " + err.message);
     }
@@ -520,7 +701,7 @@
   if (getToken()){
     gate.style.display = "none";
     dashboard.style.display = "block";
-    loadAndRenderList();
+    refreshAll();
   }
 
 })();
