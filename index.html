@@ -51,9 +51,13 @@
 
   /* ---------- filter bar (doubles as the legend) ---------- */
   .cal-filterbar{
-    display:flex; flex-wrap:wrap; align-items:center; gap: 8px;
     padding: 12px 22px; border-bottom: 1px solid var(--line); background: var(--bg-soft);
   }
+  .cal-filter-label{
+    display:block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 8px;
+  }
+  .cal-filterbar-chips{ display:flex; flex-wrap:wrap; align-items:center; gap: 8px; }
   .cal-filter-chip{
     display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700;
     padding:5px 12px; border-radius:999px; border:1px solid var(--line); background:#fff;
@@ -189,7 +193,10 @@
       </div>
     </div>
 
-    <div class="cal-filterbar" id="calFilterBar"></div>
+    <div class="cal-filterbar">
+      <span class="cal-filter-label">Filter by tag</span>
+      <div class="cal-filterbar-chips" id="calFilterBar"></div>
+    </div>
 
     <div class="cal-weekdays">
       <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
