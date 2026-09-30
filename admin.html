@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoSTAR Events — Staff Admin</title>
+<style>
+  :root{
+    --accent: #2563eb;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --ink: #14151a; --muted: #6b7280; --line: #e6e7eb; --bg: #ffffff; --bg-soft: #f7f7f8;
+    --danger: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body{ margin:0; font-family: var(--font); color: var(--ink); background: var(--bg-soft); -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width: 760px; margin: 0 auto; padding: 28px 18px 60px; }
+
+  h1{ font-size: 20px; margin: 0 0 4px; }
+  .sub{ color: var(--muted); font-size: 13.5px; margin: 0 0 24px; }
+
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px;
+    box-shadow: 0 1px 2px rgba(20,21,26,.04), 0 10px 24px -16px rgba(20,21,26,.12);
+    margin-bottom: 20px;
+  }
+  .card h2{ font-size: 14px; margin: 0 0 14px; text-transform:uppercase; letter-spacing:.04em; color: var(--muted); }
+
+  label{ display:block; font-size: 13px; font-weight: 700; margin: 14px 0 6px; }
+  label:first-of-type{ margin-top:0; }
+  input[type=text], input[type=url], input[type=date], input[type=password]{
+    width:100%; padding: 9px 11px; border:1px solid var(--line); border-radius:8px;
+    font: inherit; font-size: 14px; color: var(--ink); background:#fff;
+  }
+  input:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  .hint{ font-size:12px; color:var(--muted); margin-top:5px; }
+  .row{ display:flex; gap:14px; flex-wrap:wrap; }
+  .row > div{ flex:1; min-width:160px; }
+
+  .radio-row{ display:flex; gap:18px; align-items:center; margin-top:4px; }
+  .radio-row label{ display:flex; align-items:center; gap:6px; font-weight:600; font-size:13.5px; margin:0; }
+
+  .tagpicker{ display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+  .tag-check{ display:none; }
+  .tag-check-label{
+    display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700;
+    padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:#fff; cursor:pointer; color:var(--muted);
+  }
+  .tag-check:checked + .tag-check-label{ border-color:transparent; }
+  .newtag-row{ display:flex; gap:8px; margin-top:10px; }
+  .newtag-row input{ flex:1; }
+
+  button{ font: inherit; cursor:pointer; }
+  .btn{
+    padding: 10px 18px; border-radius: 9px; border: 1px solid var(--line); background:#fff;
+    font-weight: 700; font-size: 13.5px; color: var(--ink);
+  }
+  .btn:hover{ background: var(--bg-soft); }
+  .btn-primary{ background: var(--ink); color:#fff; border-color: var(--ink); }
+  .btn-primary:hover{ opacity:.9; background:var(--ink); }
+  .btn-primary:disabled{ opacity:.5; cursor:default; }
+  .btn-text{ background:none; border:none; color:var(--muted); text-decoration:underline; font-size:13px; padding: 6px 4px; }
+  .btn-danger{ color: var(--danger); }
+
+  .status{ margin-top:14px; font-size:13px; padding:10px 12px; border-radius:8px; display:none; }
+  .status.show{ display:block; }
+  .status.ok{ background:#e2f5ef; color:#047857; }
+  .status.err{ background:#fde8e8; color:#b91c1c; }
+  .status.info{ background: var(--bg-soft); color: var(--muted); }
+
+  .form-actions{ display:flex; align-items:center; gap:12px; margin-top:18px; }
+
+  /* list */
+  .ev-row{ display:flex; gap:12px; align-items:flex-start; padding:14px 0; border-top:1px solid var(--line); }
+  .ev-row:first-child{ border-top:none; }
+  .ev-date{ width:92px; flex:0 0 auto; font-size:12px; font-weight:700; color:var(--muted); padding-top:2px; }
+  .ev-main{ flex:1; min-width:0; }
+  .ev-title{ font-size:14px; font-weight:700; margin-bottom:5px; }
+  .ev-tags{ display:flex; flex-wrap:wrap; gap:5px; margin-bottom:5px; }
+  .ev-tag{ font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:5px; text-transform:uppercase; letter-spacing:.03em; }
+  .ev-lab{ font-size:12px; color:var(--muted); }
+  .ev-actions{ display:flex; gap:8px; flex:0 0 auto; }
+  .ev-actions button{ font-size:12px; padding:6px 11px; }
+
+  .empty{ color:var(--muted); font-size:13.5px; padding: 10px 0; }
+  .warn-banner{
+    background:#fef6e0; color:#a16207; border:1px solid #f5e2a8; border-radius:10px;
+    padding:12px 14px; font-size:13px; margin-bottom:20px;
+  }
+
+  /* gate */
+  .gate ol{ padding-left: 20px; font-size: 13.5px; line-height:1.7; color: var(--ink); }
+  .gate code{ background:var(--bg-soft); padding:1px 6px; border-radius:5px; font-size:12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>CoSTAR Events — Staff Admin</h1>
+  <p class="sub">Adds, edits and removes events directly in the live calendar's <code>events.json</code> file on GitHub.</p>
+
+  <div id="warnBanner" class="warn-banner" style="display:none;">
+    ⚠️ This page hasn't been configured yet. Open <code>admin.html</code> in a text editor and fill in
+    <code>REPO_OWNER</code> and <code>REPO_NAME</code> near the top of the script before giving this page to staff.
+  </div>
+
+  <!-- ============ GATE (shown until a token is entered) ============ -->
+  <div id="gate" class="card gate">
+    <h2>Connect</h2>
+    <p style="font-size:13.5px;">
+      You'll need a GitHub <strong>personal access token</strong> with permission to edit this one repository.
+      If you don't have one yet:
+    </p>
+    <ol>
+      <li>On GitHub, go to <strong>Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong> → <strong>Generate new token</strong>.</li>
+      <li>Under "Repository access", choose <strong>Only select repositories</strong> and pick this calendar's repo.</li>
+      <li>Under "Permissions", set <strong>Contents</strong> to <strong>Read and write</strong>. Leave everything else as-is.</li>
+      <li>Set an expiry (e.g. 90 days) and click <strong>Generate token</strong>. Copy it — you'll only see it once.</li>
+    </ol>
+    <label for="tokenInput">Paste your token</label>
+    <input type="password" id="tokenInput" placeholder="github_pat_…">
+    <p class="hint">This is kept only in this browser tab's memory for this session — it is never saved into any file, and clears when you close the tab or click "Sign out".</p>
+    <div class="form-actions">
+      <button class="btn btn-primary" id="connectBtn">Connect</button>
+    </div>
+    <div id="connectStatus" class="status"></div>
+  </div>
+
+  <!-- ============ DASHBOARD (shown once connected) ============ -->
+  <div id="dashboard" style="display:none;">
+
+    <div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
+      <button class="btn-text" id="signOutBtn">Sign out</button>
+    </div>
+
+    <div class="card">
+      <h2 id="formHeading">Add an event</h2>
+      <form id="eventForm">
+        <label for="fTitle">Title</label>
+        <input type="text" id="fTitle" required>
+
+        <label>When</label>
+        <div class="radio-row">
+          <label><input type="radio" name="dateMode" value="single" checked> Single day</label>
+          <label><input type="radio" name="dateMode" value="range"> Multiple days</label>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <div id="singleDateWrap"><input type="date" id="fDate"></div>
+          <div id="rangeDateWrap" style="display:none;">
+            <div class="row">
+              <div><input type="date" id="fStartDate" placeholder="Start"></div>
+              <div><input type="date" id="fEndDate" placeholder="End"></div>
+            </div>
+          </div>
+        </div>
+
+        <label>Tags</label>
+        <div class="tagpicker" id="tagPicker"></div>
+        <div class="newtag-row">
+          <input type="text" id="newTagInput" placeholder="Add a new tag…">
+          <button type="button" class="btn" id="addTagBtn">Add tag</button>
+        </div>
+
+        <label for="fLab">Lab (optional)</label>
+        <input type="text" id="fLab" list="labList" placeholder="e.g. National Lab">
+        <datalist id="labList">
+          <option value="National Lab">
+          <option value="Screen Lab">
+          <option value="Realtime Lab">
+          <option value="Foresight Lab">
+          <option value="Live Lab">
+        </datalist>
+
+        <label for="fUrl">Link to full event page</label>
+        <input type="url" id="fUrl" placeholder="https://www.costarnetwork.co.uk/…" required>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="saveBtn">Add event</button>
+          <button type="button" class="btn-text" id="cancelEditBtn" style="display:none;">Cancel edit</button>
+        </div>
+        <div id="formStatus" class="status"></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Upcoming &amp; recent events</h2>
+      <div id="eventList"><p class="empty">Loading…</p></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+(function(){
+
+  /* ======================================================================
+     CONFIGURE THESE TWO LINES before handing this page to staff.
+  ====================================================================== */
+  const REPO_OWNER = "hlvstrm";
+  const REPO_NAME  = "costar_calendar";
+  const BRANCH     = "main";
+  const FILE_PATH  = "events.json";
+  /* ====================================================================== */
+
+  const API_BASE = "https://api.github.com";
+  const STARTER_TAGS = ["Networking", "Hackathon", "Open Day", "Webinar", "Workshop", "Talk", "Funding & Support"];
+
+  const PALETTE = [
+    { bg: "#e8effe", text: "#1d4ed8" }, { bg: "#fdece1", text: "#c2410c" },
+    { bg: "#f1e9fd", text: "#6d28d9" }, { bg: "#e2f5ef", text: "#047857" },
+    { bg: "#fde8ef", text: "#be185d" }, { bg: "#fef6e0", text: "#a16207" },
+    { bg: "#e0f2fe", text: "#0369a1" }, { bg: "#eef0f2", text: "#4b5563" }
+  ];
+  function hashStr(s){ let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return Math.abs(h); }
+  function tagColor(tag){ return tag ? PALETTE[hashStr(tag) % PALETTE.length] : PALETTE[7]; }
+
+  if (REPO_OWNER === "hlvstrm"){
+    document.getElementById("warnBanner").style.display = "block";
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
+  }
+  function generateId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  function utf8ToBase64(str){
+    const bytes = new TextEncoder().encode(str);
+    let binary = "";
+    bytes.forEach(b => binary += String.fromCharCode(b));
+    return btoa(binary);
+  }
+  function base64ToUtf8(b64){
+    const binary = atob(b64.replace(/\n/g, ""));
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  }
+
+  function authHeaders(token){
+    return { "Authorization": `token ${token}`, "Accept": "application/vnd.github+json" };
+  }
+
+  async function fetchEventsFile(token){
+    const res = await fetch(`${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`, { headers: authHeaders(token) });
+    if (!res.ok){
+      if (res.status === 404) throw new Error(`Couldn't find ${FILE_PATH} in ${REPO_OWNER}/${REPO_NAME} — check REPO_OWNER/REPO_NAME at the top of admin.html.`);
+      if (res.status === 401 || res.status === 403) throw new Error("Token was rejected — check it's valid and has Contents: Read and write on this repo.");
+      throw new Error(`GitHub API error ${res.status}`);
+    }
+    const data = await res.json();
+    return { events: JSON.parse(base64ToUtf8(data.content)), sha: data.sha };
+  }
+
+  async function saveEventsFile(token, events, sha, message){
+    const content = utf8ToBase64(JSON.stringify(events, null, 2));
+    const res = await fetch(`${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+      method: "PUT",
+      headers: { ...authHeaders(token), "Content-Type": "application/json" },
+      body: JSON.stringify({ message, content, sha, branch: BRANCH })
+    });
+    if (!res.ok){
+      if (res.status === 409) throw new Error("Someone else may have just saved a change — please try again.");
+      throw new Error(`GitHub API error ${res.status}`);
+    }
+    return res.json();
+  }
+
+  function cleanEvent(ev){
+    const out = { id: ev.id || generateId(), title: ev.title, tags: ev.tags || [], lab: ev.lab || "", url: ev.url };
+    if (ev.date) out.date = ev.date;
+    if (ev.startDate) out.startDate = ev.startDate;
+    if (ev.endDate) out.endDate = ev.endDate;
+    return out;
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Token / session                                                        */
+
+  const gate = document.getElementById("gate");
+  const dashboard = document.getElementById("dashboard");
+  const tokenInput = document.getElementById("tokenInput");
+  const connectBtn = document.getElementById("connectBtn");
+  const connectStatus = document.getElementById("connectStatus");
+
+  function getToken(){ return sessionStorage.getItem("costar_admin_pat"); }
+  function setToken(t){ sessionStorage.setItem("costar_admin_pat", t); }
+  function clearToken(){ sessionStorage.removeItem("costar_admin_pat"); }
+
+  function showStatus(el, msg, kind){
+    el.textContent = msg; el.className = "status show " + (kind || "info");
+  }
+  function hideStatus(el){ el.className = "status"; }
+
+  connectBtn.addEventListener("click", async () => {
+    const t = tokenInput.value.trim();
+    if (!t) return;
+    showStatus(connectStatus, "Checking access…", "info");
+    connectBtn.disabled = true;
+    try{
+      await fetchEventsFile(t);
+      setToken(t);
+      gate.style.display = "none";
+      dashboard.style.display = "block";
+      loadAndRenderList();
+    }catch(err){
+      showStatus(connectStatus, "Couldn't connect: " + err.message, "err");
+    }finally{
+      connectBtn.disabled = false;
+    }
+  });
+
+  document.getElementById("signOutBtn").addEventListener("click", () => { clearToken(); location.reload(); });
+
+  /* ---------------------------------------------------------------------- */
+  /* Form                                                                   */
+
+  const form = document.getElementById("eventForm");
+  const tagPicker = document.getElementById("tagPicker");
+  const newTagInput = document.getElementById("newTagInput");
+  const saveBtn = document.getElementById("saveBtn");
+  const formHeading = document.getElementById("formHeading");
+  const formStatus = document.getElementById("formStatus");
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+  let editingId = null;
+  let knownTags = new Set(STARTER_TAGS);
+
+  document.querySelectorAll('input[name="dateMode"]').forEach(radio => {
+    radio.addEventListener("change", () => {
+      const isRange = form.dateMode.value === "range";
+      document.getElementById("singleDateWrap").style.display = isRange ? "none" : "block";
+      document.getElementById("rangeDateWrap").style.display = isRange ? "block" : "none";
+    });
+  });
+
+  function renderTagPicker(checkedTags){
+    checkedTags = checkedTags || [];
+    tagPicker.innerHTML = Array.from(knownTags).sort().map(tag => {
+      const c = tagColor(tag);
+      const id = "tag_" + tag.replace(/[^a-z0-9]/gi, "_");
+      const checked = checkedTags.includes(tag) ? "checked" : "";
+      const activeStyle = checkedTags.includes(tag) ? `style="background:${c.bg};color:${c.text}"` : "";
+      return `<input type="checkbox" class="tag-check" name="tags" id="${id}" value="${escapeHtml(tag)}" ${checked}>
+        <label class="tag-check-label" for="${id}" ${activeStyle} data-tagname="${escapeHtml(tag)}">${escapeHtml(tag)}</label>`;
+    }).join("");
+
+    tagPicker.querySelectorAll(".tag-check").forEach(cb => {
+      cb.addEventListener("change", () => {
+        const label = tagPicker.querySelector(`label[for="${cb.id}"]`);
+        const c = tagColor(cb.value);
+        label.style.cssText = cb.checked ? `background:${c.bg};color:${c.text}` : "";
+      });
+    });
+  }
+  renderTagPicker();
+
+  document.getElementById("addTagBtn").addEventListener("click", () => {
+    const val = newTagInput.value.trim();
+    if (!val) return;
+    knownTags.add(val);
+    const currentlyChecked = Array.from(tagPicker.querySelectorAll('input:checked')).map(i => i.value);
+    renderTagPicker([...currentlyChecked, val]);
+    newTagInput.value = "";
+  });
+
+  function resetForm(){
+    editingId = null;
+    form.reset();
+    document.getElementById("singleDateWrap").style.display = "block";
+    document.getElementById("rangeDateWrap").style.display = "none";
+    renderTagPicker([]);
+    formHeading.textContent = "Add an event";
+    saveBtn.textContent = "Add event";
+    cancelEditBtn.style.display = "none";
+    hideStatus(formStatus);
+  }
+  cancelEditBtn.addEventListener("click", resetForm);
+
+  function loadEventIntoForm(ev){
+    editingId = ev.id;
+    document.getElementById("fTitle").value = ev.title || "";
+    document.getElementById("fLab").value = ev.lab || "";
+    document.getElementById("fUrl").value = ev.url || "";
+    if (ev.startDate && ev.endDate){
+      form.dateMode.value = "range";
+      document.getElementById("singleDateWrap").style.display = "none";
+      document.getElementById("rangeDateWrap").style.display = "block";
+      document.getElementById("fStartDate").value = ev.startDate;
+      document.getElementById("fEndDate").value = ev.endDate;
+    } else {
+      form.dateMode.value = "single";
+      document.getElementById("singleDateWrap").style.display = "block";
+      document.getElementById("rangeDateWrap").style.display = "none";
+      document.getElementById("fDate").value = ev.date || "";
+    }
+    (ev.tags || []).forEach(t => knownTags.add(t));
+    renderTagPicker(ev.tags || []);
+    formHeading.textContent = "Edit event";
+    saveBtn.textContent = "Save changes";
+    cancelEditBtn.style.display = "inline";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideStatus(formStatus);
+
+    const title = document.getElementById("fTitle").value.trim();
+    const url = document.getElementById("fUrl").value.trim();
+    const lab = document.getElementById("fLab").value.trim();
+    const tags = Array.from(tagPicker.querySelectorAll("input:checked")).map(cb => cb.value);
+    const mode = form.dateMode.value;
+
+    let dateFields = {};
+    if (mode === "single"){
+      const d = document.getElementById("fDate").value;
+      if (!d) return showStatus(formStatus, "Please choose a date.", "err");
+      dateFields = { date: d };
+    } else {
+      const s = document.getElementById("fStartDate").value, en = document.getElementById("fEndDate").value;
+      if (!s || !en) return showStatus(formStatus, "Please choose both a start and end date.", "err");
+      if (en < s) return showStatus(formStatus, "End date is before the start date.", "err");
+      dateFields = { startDate: s, endDate: en };
+    }
+    if (!title) return showStatus(formStatus, "Please enter a title.", "err");
+    if (!url) return showStatus(formStatus, "Please enter a link.", "err");
+
+    showStatus(formStatus, editingId ? "Saving changes…" : "Adding event…", "info");
+    saveBtn.disabled = true;
+    try{
+      const token = getToken();
+      const { events, sha } = await fetchEventsFile(token);
+      let updated;
+      if (editingId){
+        updated = events.map(ev => ev.id === editingId
+          ? cleanEvent({ id: editingId, title, url, lab, tags, ...dateFields })
+          : cleanEvent(ev));
+      } else {
+        updated = [...events.map(cleanEvent), cleanEvent({ id: generateId(), title, url, lab, tags, ...dateFields })];
+      }
+      await saveEventsFile(token, updated, sha, editingId ? `Update event: ${title}` : `Add event: ${title}`);
+      showStatus(formStatus, (editingId ? "Event updated" : "Event added") + " ✓ (live in ~a minute once GitHub Pages redeploys)", "ok");
+      resetForm();
+      loadAndRenderList();
+    }catch(err){
+      showStatus(formStatus, "Something went wrong: " + err.message, "err");
+    }finally{
+      saveBtn.disabled = false;
+    }
+  });
+
+  /* ---------------------------------------------------------------------- */
+  /* List                                                                   */
+
+  const eventListEl = document.getElementById("eventList");
+
+  function sortKey(ev){ return ev.date || ev.startDate || "9999"; }
+
+  async function loadAndRenderList(){
+    eventListEl.innerHTML = `<p class="empty">Loading…</p>`;
+    try{
+      const token = getToken();
+      const { events } = await fetchEventsFile(token);
+      events.forEach(e => (e.tags || []).forEach(t => knownTags.add(t)));
+
+      if (!events.length){
+        eventListEl.innerHTML = `<p class="empty">No events yet — add one above.</p>`;
+        return;
+      }
+      const sorted = [...events].sort((a,b) => sortKey(a).localeCompare(sortKey(b)));
+      eventListEl.innerHTML = sorted.map(ev => {
+        const dateLabel = ev.date ? ev.date : `${ev.startDate} → ${ev.endDate}`;
+        const tagsHtml = (ev.tags||[]).map(t => {
+          const c = tagColor(t);
+          return `<span class="ev-tag" style="background:${c.bg};color:${c.text}">${escapeHtml(t)}</span>`;
+        }).join("");
+        return `<div class="ev-row">
+          <div class="ev-date">${escapeHtml(dateLabel)}</div>
+          <div class="ev-main">
+            <div class="ev-title">${escapeHtml(ev.title)}</div>
+            <div class="ev-tags">${tagsHtml}</div>
+            ${ev.lab ? `<div class="ev-lab">${escapeHtml(ev.lab)}</div>` : ""}
+          </div>
+          <div class="ev-actions">
+            <button type="button" class="btn" data-edit="${ev.id}">Edit</button>
+            <button type="button" class="btn btn-danger" data-delete="${ev.id}">Delete</button>
+          </div>
+        </div>`;
+      }).join("");
+
+      eventListEl.querySelectorAll("[data-edit]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const ev = events.find(e => e.id === btn.dataset.edit);
+          if (ev) loadEventIntoForm(ev);
+        });
+      });
+      eventListEl.querySelectorAll("[data-delete]").forEach(btn => {
+        btn.addEventListener("click", () => handleDelete(btn.dataset.delete));
+      });
+    }catch(err){
+      eventListEl.innerHTML = `<p class="empty">Couldn't load events: ${escapeHtml(err.message)}</p>`;
+    }
+  }
+
+  async function handleDelete(id){
+    const token = getToken();
+    try{
+      const { events, sha } = await fetchEventsFile(token);
+      const target = events.find(e => e.id === id);
+      if (!target) return;
+      if (!confirm(`Delete "${target.title}"? This can't be undone.`)) return;
+      const updated = events.filter(e => e.id !== id).map(cleanEvent);
+      await saveEventsFile(token, updated, sha, `Delete event: ${target.title}`);
+      loadAndRenderList();
+    }catch(err){
+      alert("Could not delete: " + err.message);
+    }
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  if (getToken()){
+    gate.style.display = "none";
+    dashboard.style.display = "block";
+    loadAndRenderList();
+  }
+
+})();
+</script>
+</body>
+</html>
