@@ -40,11 +40,13 @@
   .radio-row{ display:flex; gap:18px; align-items:center; margin-top:4px; }
   .radio-row label{ display:flex; align-items:center; gap:6px; font-weight:600; font-size:13.5px; margin:0; }
 
-  .tagpicker{ display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+  .tagpicker{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:4px; }
   .tag-check{ display:none; }
   .tag-check-label{
     display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700;
     padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:#fff; cursor:pointer; color:var(--muted);
+    margin: 0; /* the generic label{margin:...} + label:first-of-type rule below would otherwise
+                  make the alphabetically-first tag pill a different size to the rest */
   }
   .tag-check:checked + .tag-check-label{ border-color:transparent; }
   .tagpicker-empty{ font-size:13px; color:var(--muted); }
@@ -213,8 +215,8 @@
   /* ======================================================================
      CONFIGURE THESE TWO LINES before handing this page to staff.
   ====================================================================== */
-  const REPO_OWNER = "hlvstrm";
-  const REPO_NAME  = "costar_calendar";
+  const REPO_OWNER = "YOUR-GITHUB-USERNAME";
+  const REPO_NAME  = "costar-events-calendar";
   const BRANCH     = "main";
   /* ====================================================================== */
 
@@ -275,7 +277,7 @@
   }
 
   async function githubGetFile(path, token){
-    const res = await fetch(`${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${BRANCH}`, { headers: authHeaders(token) });
+    const res = await fetch(`${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${BRANCH}`, { headers: authHeaders(token), cache: "no-store" });
     if (!res.ok){
       const err = new Error(describeApiError(res.status));
       err.status = res.status;
