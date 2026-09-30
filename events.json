@@ -50,5 +50,16 @@
     "lab": "Screen Lab",
     "url": "https://www.costarnetwork.co.uk/",
     "date": "2026-09-30"
+  },
+  {
+    "id": "muo06h2hve2vi",
+    "title": "Multisensory Hackathon",
+    "tags": [
+      "Hackathon"
+    ],
+    "lab": "National Lab",
+    "url": "https://www.costarnetwork.co.uk/",
+    "startDate": "2026-09-30",
+    "endDate": "2026-10-02"
   }
 ]
