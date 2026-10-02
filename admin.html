@@ -137,17 +137,6 @@
     </div>
 
     <div class="card">
-      <h2>Manage tags</h2>
-      <p class="card-sub">Rename or delete a tag everywhere it's used, or add a new one for staff to pick from below.</p>
-      <div id="tagManagerList"><p class="empty">Loading…</p></div>
-      <div class="newtag-row">
-        <input type="text" id="newTagNameInput" placeholder="New tag name…">
-        <button type="button" class="btn" id="addTagBtn">Add tag</button>
-      </div>
-      <div id="tagStatus" class="status"></div>
-    </div>
-
-    <div class="card">
       <h2 id="formHeading">Add an event</h2>
       <form id="eventForm">
         <label for="fTitle">Title</label>
@@ -170,7 +159,7 @@
 
         <label>Tags</label>
         <div class="tagpicker" id="tagPicker"></div>
-        <p class="hint">Don't see the tag you need? Add it in "Manage tags" above, then come back here.</p>
+        <p class="hint">Don't see the tag you need? Add it in "Manage tags", then come back here.</p>
 
         <label for="fLab">Lab (optional)</label>
         <input type="text" id="fLab" list="labList" placeholder="e.g. National Lab">
@@ -194,6 +183,17 @@
       </form>
     </div>
 
+    <div class="card">
+      <h2>Manage tags</h2>
+      <p class="card-sub">Rename or delete a tag everywhere it's used, or add a new one for staff to pick from below.</p>
+      <div id="tagManagerList"><p class="empty">Loading…</p></div>
+      <div class="newtag-row">
+        <input type="text" id="newTagNameInput" placeholder="New tag name…">
+        <button type="button" class="btn" id="addTagBtn">Add tag</button>
+      </div>
+      <div id="tagStatus" class="status"></div>
+    </div>
+    
     <div class="card">
       <h2>Upcoming &amp; recent events</h2>
       <div id="eventList"><p class="empty">Loading…</p></div>
