@@ -16,28 +16,15 @@ code change or deploy.
 | `SECURITY.md` | Threat model and mitigations |
 
 ## Summary
-
-The host CMS (Storyblok, on Railway) doesn't support a native events
-calendar, but does support arbitrary iframe embeds. This is implemented as
-a fully static, dependency-free site on GitHub Pages, embedded into the
-relevant Storyblok page via `<iframe>`.
+This is implemented as
+a fully static, dependency-free site on GitHub Pages with intention of embedding via `<iframe>`.
 
 There is no server and no database. "Backend" functionality (adding,
 editing, deleting events and tags) is implemented by `admin.html` running
 entirely client-side and committing directly to this repository's
 `events.json`/`tags.json` via the GitHub REST API, authenticated with a
-user-supplied GitHub personal access token. Full data flow in
-`ARCHITECTURE.md`.
-
-## Scope / non-goals
-
-- Month view only — no week/day/agenda view.
-- No recurring-event rule engine — only explicit multi-day ranges
-  (`startDate`/`endDate`).
-- No user accounts or roles — a single GitHub PAT (per user) is the only
-  access control.
-- Built for low volume (tens of events/month, a handful of editors) — see
-  `ARCHITECTURE.md` for what would need rethinking at larger scale.
+user-supplied GitHub personal access token. No user accounts or roles — 
+a single GitHub PAT (per user) is the only access control.
 
 ## Configuration required before deploying to a new repo
 
