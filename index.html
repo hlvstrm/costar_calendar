@@ -1,18 +1,3 @@
-<!--
-  CoSTAR Network — Public Events Calendar
-  ========================================
-  Self-contained static page: no build step, no dependencies, no server.
-  Reads event data from ./events.json at runtime (fetched with
-  cache: "no-store"). Designed to be hosted on GitHub Pages and embedded
-  elsewhere via <iframe> — event links use target="_top" to navigate the
-  parent page rather than the iframe.
-
-  See ../README.md for deployment/configuration and ../ARCHITECTURE.md for
-  how this works internally (month-grid generation, the lab-colour vs
-  tag-colour systems, modal state, the iframe-resize postMessage contract).
-  See ../SECURITY.md for the rendering/escaping rules referenced inline
-  below — don't remove those without reading that doc first.
--->
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
@@ -21,7 +6,6 @@
 <title>CoSTAR Network — Upcoming Events</title>
 <style>
   :root{
-    /* ---- swap these for CoSTAR's exact brand values once you have them ---- */
     --accent: #2563eb;          /* used for "today" highlight + nav hover */
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
