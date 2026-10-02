@@ -1,3 +1,20 @@
+<!--
+  CoSTAR Network — Events Admin
+  ===============================
+  Self-contained static page: no build step, no dependencies, no server.
+  Reads and writes events.json/tags.json in this repository directly via
+  the GitHub REST API (Contents endpoint), authenticated with a
+  user-supplied GitHub personal access token kept only in sessionStorage
+  for the current tab.
+
+  Before deploying: set REPO_OWNER / REPO_NAME / BRANCH below.
+
+  See ../ARCHITECTURE.md for the full read/write/auth model (the
+  githubGetFile/githubPutFile helpers, the sha-based optimistic
+  concurrency, the tags.json catalog/usage-union model), and
+  ../SECURITY.md for the threat model — note in particular that every
+  validation check in this file is a UX guard, not a security boundary.
+-->
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
@@ -144,6 +161,17 @@
     </div>
 
     <div class="card">
+      <h2>Manage tags</h2>
+      <p class="card-sub">Rename or delete a tag everywhere it's used, or add a new one for staff to pick from below.</p>
+      <div id="tagManagerList"><p class="empty">Loading…</p></div>
+      <div class="newtag-row">
+        <input type="text" id="newTagNameInput" placeholder="New tag name…">
+        <button type="button" class="btn" id="addTagBtn">Add tag</button>
+      </div>
+      <div id="tagStatus" class="status"></div>
+    </div>
+
+    <div class="card">
       <h2 id="formHeading">Add an event</h2>
       <form id="eventForm">
         <label for="fTitle">Title</label>
@@ -163,7 +191,7 @@
             </div>
           </div>
         </div>
-        
+
         <label>Tags</label>
         <div class="tagpicker" id="tagPicker"></div>
         <p class="hint">Don't see the tag you need? Add it in "Manage tags" above, then come back here.</p>
@@ -176,6 +204,7 @@
           <option value="Realtime Lab">
           <option value="Foresight Lab">
           <option value="Live Lab">
+          <option value="CoSTAR Network">
         </datalist>
 
         <label for="fUrl">Link to full event page</label>
@@ -190,18 +219,6 @@
     </div>
 
     <div class="card">
-      <h2>Manage tags</h2>
-      <p class="card-sub">Rename or delete a tag everywhere it's used, or add a new one for staff to pick from below.</p>
-      <div id="tagManagerList"><p class="empty">Loading…</p></div>
-      <div class="newtag-row">
-        <input type="text" id="newTagNameInput" placeholder="New tag name…">
-        <button type="button" class="btn" id="addTagBtn">Add tag</button>
-      </div>
-      <div id="tagStatus" class="status"></div>
-    </div>
-
-    
-    <div class="card">
       <h2>Upcoming &amp; recent events</h2>
       <div id="eventList"><p class="empty">Loading…</p></div>
     </div>
@@ -214,10 +231,10 @@
 (function(){
 
   /* ======================================================================
-     CONFIGURE THESE TWO LINES before handing this page to staff.
+     Repo target — set before deploying. See README.md "Configuration".
   ====================================================================== */
-  const REPO_OWNER = "hlvstrm";
-  const REPO_NAME  = "costar_calendar";
+  const REPO_OWNER = "YOUR-GITHUB-USERNAME";
+  const REPO_NAME  = "costar-events-calendar";
   const BRANCH     = "main";
   /* ====================================================================== */
 
@@ -234,6 +251,19 @@
   ];
   function hashStr(s){ let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return Math.abs(h); }
   function tagColor(tag){ return tag ? PALETTE[hashStr(tag) % PALETTE.length] : PALETTE[7]; }
+
+  // Same fixed lookup as the public calendar, so the list here previews
+  // the colour each event will actually show as.
+  const LAB_COLOURS = {
+    "National Lab":   { bg: "#fdece1", text: "#c2410c" },
+    "Realtime Lab":   { bg: "#dbeafe", text: "#1d4ed8" },
+    "Screen Lab":     { bg: "#cffafe", text: "#0e7490" },
+    "Live Lab":       { bg: "#fce7f3", text: "#be185d" },
+    "Foresight Lab":  { bg: "#fef9c3", text: "#a16207" },
+    "CoSTAR Network": { bg: "#eef0f2", text: "#4b5563" }
+  };
+  const NO_LAB_COLOUR = { bg: "#eef0f2", text: "#4b5563" };
+  function labColor(lab){ return (lab && LAB_COLOURS[lab]) || NO_LAB_COLOUR; }
 
   if (REPO_OWNER === "YOUR-GITHUB-USERNAME"){
     document.getElementById("warnBanner").style.display = "block";
@@ -616,6 +646,16 @@
     }
     if (!title) return showStatus(formStatus, "Please enter a title.", "err");
     if (!url) return showStatus(formStatus, "Please enter a link.", "err");
+    if (!/^https?:\/\//i.test(url)){
+      return showStatus(formStatus, "Links must start with https:// (or http://) — other link types aren't allowed, for security reasons.", "err");
+    }
+    let urlHost = "";
+    try{ urlHost = new URL(url).hostname.toLowerCase(); }catch(e){ /* already validated above */ }
+    const looksLikeCostar = urlHost === "costarnetwork.co.uk" || urlHost.endsWith(".costarnetwork.co.uk");
+    if (!looksLikeCostar){
+      const proceed = confirm(`Heads up: this link goes to "${urlHost}", not costarnetwork.co.uk. Double-check it's correct before saving.\n\nSave anyway?`);
+      if (!proceed) return;
+    }
 
     showStatus(formStatus, editingId ? "Saving changes…" : "Adding event…", "info");
     saveBtn.disabled = true;
@@ -664,11 +704,11 @@
         <div class="ev-main">
           <div class="ev-title">${escapeHtml(ev.title)}</div>
           <div class="ev-tags">${tagsHtml}</div>
-          ${ev.lab ? `<div class="ev-lab">${escapeHtml(ev.lab)}</div>` : ""}
+          <div class="ev-lab"><span class="tag-row-dot" style="display:inline-block;width:8px;height:8px;background:${labColor(ev.lab).text};margin-right:5px;vertical-align:middle;"></span>${escapeHtml(ev.lab || "CoSTAR Network / no lab")}</div>
         </div>
         <div class="row-actions">
-          <button type="button" class="btn" data-edit="${ev.id}">Edit</button>
-          <button type="button" class="btn btn-danger" data-delete="${ev.id}">Delete</button>
+          <button type="button" class="btn" data-edit="${escapeHtml(ev.id)}">Edit</button>
+          <button type="button" class="btn btn-danger" data-delete="${escapeHtml(ev.id)}">Delete</button>
         </div>
       </div>`;
     }).join("");

@@ -1,3 +1,18 @@
+<!--
+  CoSTAR Network — Public Events Calendar
+  ========================================
+  Self-contained static page: no build step, no dependencies, no server.
+  Reads event data from ./events.json at runtime (fetched with
+  cache: "no-store"). Designed to be hosted on GitHub Pages and embedded
+  elsewhere via <iframe> — event links use target="_top" to navigate the
+  parent page rather than the iframe.
+
+  See ../README.md for deployment/configuration and ../ARCHITECTURE.md for
+  how this works internally (month-grid generation, the lab-colour vs
+  tag-colour systems, modal state, the iframe-resize postMessage contract).
+  See ../SECURITY.md for the rendering/escaping rules referenced inline
+  below — don't remove those without reading that doc first.
+-->
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
@@ -222,26 +237,37 @@
 (function(){
 
   /* ----------------------------------------------------------------------
-     Deterministic tag colours: same tag always gets the same colour, and
-     brand-new tags added later (e.g. via the admin page) get one
-     automatically — nobody has to edit this code when a new tag appears.
+     Event colour now follows the Lab, not the tag — a fixed lookup (not a
+     hash), so each lab always renders exactly the colour chosen for it.
+     Tag chips (filter bar, the little tag badges in the event card) still
+     use their own hash-based colour further down — that's deliberate:
+     tags aren't tied to one lab, so they can't borrow the lab's colour.
   ---------------------------------------------------------------------- */
-  const PALETTE = [
-    { bg: "#e8effe", text: "#1d4ed8" },
-    { bg: "#fdece1", text: "#c2410c" },
-    { bg: "#f1e9fd", text: "#6d28d9" },
-    { bg: "#e2f5ef", text: "#047857" },
-    { bg: "#fde8ef", text: "#be185d" },
-    { bg: "#fef6e0", text: "#a16207" },
-    { bg: "#e0f2fe", text: "#0369a1" },
-    { bg: "#eef0f2", text: "#4b5563" }
+  const LAB_COLOURS = {
+    "National Lab":   { bg: "#fdece1", text: "#c2410c" }, // Orange
+    "Realtime Lab":   { bg: "#dbeafe", text: "#1d4ed8" }, // Blue
+    "Screen Lab":     { bg: "#cffafe", text: "#0e7490" }, // Light blue
+    "Live Lab":       { bg: "#fce7f3", text: "#be185d" }, // Pink
+    "Foresight Lab":  { bg: "#fef9c3", text: "#a16207" }, // Yellow
+    "CoSTAR Network": { bg: "#eef0f2", text: "#4b5563" }  // Grey
+  };
+  const NO_LAB_COLOUR = { bg: "#eef0f2", text: "#4b5563" }; // Grey — also covers no lab attached
+  function labColor(lab){ return (lab && LAB_COLOURS[lab]) || NO_LAB_COLOUR; }
+
+  // Tag chips (filter bar + the tag badges inside an event's detail card)
+  // keep their own colour, independent of lab, via a simple hash so any
+  // new tag added later gets a consistent colour automatically.
+  const TAG_PALETTE = [
+    { bg: "#e8effe", text: "#1d4ed8" }, { bg: "#f1e9fd", text: "#6d28d9" },
+    { bg: "#e2f5ef", text: "#047857" }, { bg: "#fef6e0", text: "#a16207" },
+    { bg: "#e0f2fe", text: "#0369a1" }, { bg: "#eef0f2", text: "#4b5563" }
   ];
   function hashStr(s){
     let h = 0;
     for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
     return Math.abs(h);
   }
-  function tagColor(tag){ return tag ? PALETTE[hashStr(tag) % PALETTE.length] : PALETTE[7]; }
+  function tagColor(tag){ return tag ? TAG_PALETTE[hashStr(tag) % TAG_PALETTE.length] : TAG_PALETTE[5]; }
 
   function pad(n){ return String(n).padStart(2,"0"); }
   function dkey(y,m,d){ return `${y}-${pad(m+1)}-${pad(d)}`; }
@@ -365,11 +391,11 @@
       if (isWeekend) classes.push("is-weekend");
 
       const cap = maxVisible();
-      const visible = dayEvents.length > cap ? dayEvents.slice(0, cap - 1) : dayEvents;
+      const visible = dayEvents.length > cap ? dayEvents.slice(0, cap) : dayEvents;
       let pillsHtml = "";
       visible.forEach(ev => {
-        const c = tagColor((ev.tags && ev.tags[0]) || "");
-        pillsHtml += `<button type="button" class="cal-pill" data-id="${ev.id}" style="background:${c.bg};color:${c.text}" title="${escapeAttr(ev.title)}">
+        const c = labColor(ev.lab);
+        pillsHtml += `<button type="button" class="cal-pill" data-id="${escapeAttr(ev.id)}" style="background:${c.bg};color:${c.text}" title="${escapeAttr(ev.title)}">
           <span class="cal-dot" style="background:${c.text}"></span>${escapeHtml(ev.title)}
         </button>`;
       });
@@ -437,8 +463,8 @@
     modalHeading.textContent = new Date(y, m, d).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 
     modalBody.innerHTML = list.map(ev => {
-      const c = tagColor((ev.tags && ev.tags[0]) || "");
-      return `<button type="button" class="cal-modal-list-item" data-id="${ev.id}">
+      const c = labColor(ev.lab);
+      return `<button type="button" class="cal-modal-list-item" data-id="${escapeAttr(ev.id)}">
         <span class="cal-dot" style="background:${c.text}"></span>${escapeHtml(ev.title)}
       </button>`;
     }).join("");
@@ -457,12 +483,15 @@
       return `<span class="cal-modal-tag" style="background:${c.bg};color:${c.text}">${escapeHtml(t)}</span>`;
     }).join("");
 
+    const safeUrl = /^https?:\/\//i.test(ev.url || "");
     modalBody.innerHTML = `
       ${cameFromKey ? `<button type="button" class="cal-modal-back" id="calModalBack">&larr; Back</button>` : ""}
       <div class="cal-modal-tags">${tagsHtml}</div>
       <div class="cal-modal-bigtitle">${escapeHtml(ev.title)}</div>
       <div class="cal-modal-meta">${escapeHtml(formatEventDate(ev))}${ev.lab ? " · " + escapeHtml(ev.lab) : ""}</div>
-      <a class="cal-modal-cta" href="${escapeAttr(ev.url || '#')}" target="_top" rel="noopener">View full event details →</a>
+      ${safeUrl
+        ? `<a class="cal-modal-cta" href="${escapeAttr(ev.url)}" target="_top" rel="noopener">View full event details →</a>`
+        : `<div class="cal-modal-cta" style="opacity:.5;cursor:default;">Link unavailable</div>`}
     `;
     if (cameFromKey){
       document.getElementById("calModalBack").addEventListener("click", () => openDayModal(cameFromKey));
