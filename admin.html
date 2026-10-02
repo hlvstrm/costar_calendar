@@ -1,20 +1,3 @@
-<!--
-  CoSTAR Network — Events Admin
-  ===============================
-  Self-contained static page: no build step, no dependencies, no server.
-  Reads and writes events.json/tags.json in this repository directly via
-  the GitHub REST API (Contents endpoint), authenticated with a
-  user-supplied GitHub personal access token kept only in sessionStorage
-  for the current tab.
-
-  Before deploying: set REPO_OWNER / REPO_NAME / BRANCH below.
-
-  See ../ARCHITECTURE.md for the full read/write/auth model (the
-  githubGetFile/githubPutFile helpers, the sha-based optimistic
-  concurrency, the tags.json catalog/usage-union model), and
-  ../SECURITY.md for the threat model — note in particular that every
-  validation check in this file is a UX guard, not a security boundary.
--->
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
@@ -136,14 +119,7 @@
     <h2>Connect</h2>
     <p style="font-size:13.5px;">
       You'll need a GitHub <strong>personal access token</strong> with permission to edit this one repository.
-      If you don't have one yet:
     </p>
-    <ol>
-      <li>On GitHub, go to <strong>Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong> → <strong>Generate new token</strong>.</li>
-      <li>Under "Repository access", choose <strong>Only select repositories</strong> and pick this calendar's repo.</li>
-      <li>Under "Permissions", set <strong>Contents</strong> to <strong>Read and write</strong> — this is the step people most often miss, and it's why "viewing" things works but saving doesn't. Leave everything else as-is.</li>
-      <li>Set an expiry (e.g. 90 days) and click <strong>Generate token</strong>. Copy it — you'll only see it once.</li>
-    </ol>
     <label for="tokenInput">Paste your token</label>
     <input type="password" id="tokenInput" placeholder="github_pat_…">
     <p class="hint">This is kept only in this browser tab's memory for this session — it is never saved into any file, and clears when you close the tab or click "Sign out".</p>
@@ -233,14 +209,14 @@
   /* ======================================================================
      Repo target — set before deploying. See README.md "Configuration".
   ====================================================================== */
-  const REPO_OWNER = "YOUR-GITHUB-USERNAME";
-  const REPO_NAME  = "costar-events-calendar";
+  const REPO_OWNER = "hlvstrm";
+  const REPO_NAME  = "costar_calendar";
   const BRANCH     = "main";
   /* ====================================================================== */
 
   const FILE_PATH_EVENTS = "events.json";
   const FILE_PATH_TAGS   = "tags.json";
-  const DEFAULT_TAGS     = ["Networking", "Hackathon", "Open Day", "Webinar", "Workshop", "Talk"];
+  const DEFAULT_TAGS     = ["Networking", "Hackathon", "Open Day", "Webinar", "Workshop"];
   const API_BASE = "https://api.github.com";
 
   const PALETTE = [
